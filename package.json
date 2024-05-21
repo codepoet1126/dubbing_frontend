@@ -1,0 +1,43 @@
+{
+  "name": "material-tailwind-dashboard-react",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/babel-plugin": "^11.11.0",
+    "@emotion/core": "^11.0.0",
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "@heroicons/react": "2.0.12",
+    "@material-tailwind/react": "1.2.4",
+    "@mui/material": "^5.15.18",
+    "apexcharts": "3.35.5",
+    "axios": "^1.7.0",
+    "duration-time-conversion": "^1.0.6",
+    "flv.js": "^1.6.2",
+    "loadsh": "^0.0.4",
+    "prop-types": "15.8.1",
+    "react": "18.2.0",
+    "react-apexcharts": "1.4.0",
+    "react-dom": "18.2.0",
+    "react-dplayer": "^0.4.2",
+    "react-dropzone": "^14.2.3",
+    "react-router-dom": "6.4.2"
+  },
+  "devDependencies": {
+    "@types/react": "18.0.17",
+    "@types/react-dom": "18.0.6",
+    "@vitejs/plugin-react": "2.1.0",
+    "autoprefixer": "10.4.12",
+    "postcss": "8.4.17",
+    "prettier": "2.7.1",
+    "prettier-plugin-tailwindcss": "0.1.13",
+    "tailwindcss": "3.1.8",
+    "vite": "3.1.0"
+  }
+}
