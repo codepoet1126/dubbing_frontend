@@ -169,7 +169,7 @@ export function Dubbing() {
     const formData = new FormData()
     formData.append("file", videoFile)
     try {
-      const response = await axios.post("https://e088-155-94-255-2.ngrok-free.app/voice-clone", formData, {
+      const response = await axios.post("http://localhost:5001/voice-clone", formData, {
         headers: {
           'Content-Type': "multipart/form-data"
         }
@@ -461,7 +461,7 @@ export function Dubbing() {
                       return
                     }
                     setLoading(true)
-                    const response = await axios.post("https://e088-155-94-255-2.ngrok-free.app/generate_audio", {
+                    const response = await axios.post("http://localhost:5001/generate_audio", {
                       transcribeText: transcribeText,
                       source: dubbingAudio
                     })
@@ -508,7 +508,7 @@ export function Dubbing() {
                     <img src="/img/icons/arrow-down.png" />
                   </a>
                   <div className="flex items-center">
-                    <audio ref={audioRef} controls src={transcribeAudio !== "" ? `https://e088-155-94-255-2.ngrok-free.app/static/target_audios/${transcribeAudio}` : ""} className="hidden" onTimeUpdate={(e) => {
+                    <audio ref={audioRef} controls src={transcribeAudio !== "" ? `http://localhost:5001/static/target_audios/${transcribeAudio}` : ""} className="hidden" onTimeUpdate={(e) => {
                       
                       setCurrentTime(e.target.currentTime)
                     }} onLoadedMetadata={(e) => {
@@ -548,7 +548,7 @@ export function Dubbing() {
                     waveScale={0.8}
                     currentTime={currentTime}
                     throttleWait={300}
-                    url={transcribeAudio !== "" ? `https://e088-155-94-255-2.ngrok-free.app/static/target_audios/${transcribeAudio}` : ""}
+                    url={transcribeAudio !== "" ? `http://localhost:5001/static/target_audios/${transcribeAudio}` : ""}
                     click={click}
                     contextmenu={contextmenu}
                     subArray={subArray}
