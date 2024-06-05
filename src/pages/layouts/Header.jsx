@@ -147,7 +147,7 @@ export function Header() {
     return (
         <div className="flex justify-between items-center p-10">
                     <div className='flex items-center'>
-                        <Link to="/home"><img src="/img/logo.png" className="w-[48px] h-[43px]" /></Link>
+                        <Link to="/"><img src="/img/logo.png" className="w-[48px] h-[43px]" /></Link>
                         <p className="text-4xl text-white ml-10">Dashboard</p>
                     </div>
 

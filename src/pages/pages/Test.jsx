@@ -1,22 +1,167 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import Dropzone from "react-dropzone";
+import PropTypes from 'prop-types';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import pizzip from "pizzip";
 import axios from "axios";
-// import { hot } from "react-hot-loader/root";
-import ShWave from "../../componets/shwave";
-import VideoPlayer from "../../componets/videoPlayer";
+import { Menu } from '@mui/base/Menu';
+import { MenuButton as BaseMenuButton } from '@mui/base/MenuButton';
+import { MenuItem as BaseMenuItem, menuItemClasses } from '@mui/base/MenuItem';
+import { Dropdown } from '@mui/base/Dropdown';
+import { styled } from '@mui/system';
+import { CssTransition } from '@mui/base/Transitions';
+import { PopupContext } from '@mui/base/Unstable_Popup';
 import { Link } from "react-router-dom";
+import docxtemplate from "docxtemplater"
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { Header } from "../layouts/Header";
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
-import TextFieldsIcon from '@mui/icons-material/TextFields';
-import GraphicEqIcon from '@mui/icons-material/GraphicEq';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import Studio from "./Studio";
+import { SettingsContext } from "../context/settingsContext";
 
-export function Dubbing() {
+const blue = {
+  50: '#F0F7FF',
+  100: '#C2E0FF',
+  200: '#99CCF3',
+  300: '#66B2FF',
+  400: '#3399FF',
+  500: '#007FFF',
+  600: '#0072E6',
+  700: '#0059B3',
+  800: '#004C99',
+  900: '#003A75',
+};
+
+const grey = {
+  50: '#F3F6F9',
+  100: '#E5EAF2',
+  200: '#DAE2ED',
+  300: '#C7D0DD',
+  400: '#B0B8C4',
+  500: '#9DA8B7',
+  600: '#6B7A90',
+  700: '#434D5B',
+  800: '#303740',
+  900: '#1C2025',
+};
+
+const Listbox = styled('ul')(
+  ({ theme }) => `
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.875rem;
+  box-sizing: border-box;
+  
+  padding: 6px;
+  margin: 12px 0;
+  min-width: 200px;
+  border-radius: 12px;
+  overflow: auto;
+  outline: 0px;
+  background: ${theme.palette.mode === 'dark' ? grey[900] : '#fff'};
+  border: 1px solid ${theme.palette.mode === 'dark' ? grey[700] : grey[200]};
+  color: ${theme.palette.mode === 'dark' ? grey[300] : grey[900]};
+  box-shadow: 0px 4px 30px ${theme.palette.mode === 'dark' ? grey[900] : grey[200]};
+  z-index: 1;
+
+  .closed & {
+    opacity: 0;
+    transform: scale(0.95, 0.8);
+    transition: opacity 200ms ease-in, transform 200ms ease-in;
+  }
+  
+  .open & {
+    opacity: 1;
+    transform: scale(1, 1);
+    transition: opacity 100ms ease-out, transform 100ms cubic-bezier(0.43, 0.29, 0.37, 1.48);
+  }
+
+  .placement-top & {
+    transform-origin: bottom;
+  }
+
+  .placement-bottom & {
+    transform-origin: top;
+  }
+  `,
+);
+
+const AnimatedListbox = React.forwardRef(function AnimatedListbox(props, ref) {
+  const { ownerState, ...other } = props;
+  const popupContext = React.useContext(PopupContext);
+
+  if (popupContext == null) {
+    throw new Error(
+      'The `AnimatedListbox` component cannot be rendered outside a `Popup` component',
+    );
+  }
+
+  const verticalPlacement = popupContext.placement.split('-')[0];
+
+  return (
+    <CssTransition
+      className={`placement-${verticalPlacement}`}
+      enterClassName="open"
+      exitClassName="closed"
+    >
+      <Listbox {...other} ref={ref} />
+    </CssTransition>
+  );
+});
+
+AnimatedListbox.propTypes = {
+  ownerState: PropTypes.object.isRequired,
+};
+
+const MenuItem = styled(BaseMenuItem)(
+  ({ theme }) => `
+  list-style: none;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: default;
+  user-select: none;
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+
+  &:focus {
+    outline: 3px solid ${theme.palette.mode === 'dark' ? blue[600] : blue[200]};
+    background-color: ${theme.palette.mode === 'dark' ? grey[800] : grey[100]};
+    color: ${theme.palette.mode === 'dark' ? grey[300] : grey[900]};
+  }
+
+  &.${menuItemClasses.disabled} {
+    color: ${theme.palette.mode === 'dark' ? grey[700] : grey[400]};
+  }
+  `,
+);
+
+const MenuButton = styled(BaseMenuButton)(
+  ({ theme }) => `
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: flex;
+  align-items:center;
+  justify-content: space-between;
+  line-height: 1.5;
+  width: 100%;
+  border: 2px solid #4E3F3A
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: white !important;
+  transition: all 150ms ease;
+  cursor: pointer;
+  background: transparent;
+  color: ${theme.palette.mode === 'dark' ? grey[200] : grey[900]};
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+
+  `,
+);
+
+
+export function Test() {
 
   const [player, setPlayer] = useState(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -34,15 +179,19 @@ export function Dubbing() {
   const audioRef = useRef(null)
   const originalAudioRef = useRef(null)
   const originVideoRef = useRef(null)
+  const panelRef = useRef(null)
+  const [panelH, setPanelH] = useState(0)
   const [transcribeText, setTranscribeText] = useState("")
   const [loading, setLoading] = useState(false);
   const [totalTime, setTotalTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [subArray, setSubArray] = useState([]);
   const [totalTimeStr, setTotalTimeStr] = useState("00:00:00")
   const [currentTimeStr, setCurrentTimeStr] = useState("00:00:00")
-  const [subArray, setSubArray] = useState([]);
-  const [clonedMute, setClonedMute] = useState(false)
-  const [originalMute, setOriginalMute] = useState(false)
+  const [transcribeFile, setTranscribeFile] = useState(null)
+  const [dubbingFile, setDubbingFile] = useState(null)
+  const [voices, setVoices] = useState([])
+  const [speakers, setSpeakers] = useState([])
 
   const handleVideoFile = (e) => {
     URL.revokeObjectURL(url);
@@ -156,6 +305,7 @@ export function Dubbing() {
       setIsPlaying(false)
       setCurrentTime(0)
     }
+    console.log(currentTime)
   }, [currentTime])
   useEffect(() => {
     resizeVideoPlayer()
@@ -182,10 +332,41 @@ export function Dubbing() {
     setCurrentTimeStr(formatSeconds(currentTime))
     setTotalTimeStr(formatSeconds(totalTime))
   }, [currentTime, totalTime])
+
+  useEffect(() => {
+    if (panelRef.current) {
+      setPanelH(panelRef.current.getBoundingClientRect().height)
+    }
+  }, [panelRef.current])
+
+  useEffect(() => {
+    if (transcribeAudio !== "") {
+      fetch(`http://localhost:4000/static/target_audios/${transcribeAudio}`).then(response => {
+        response.blob().then(blob => {
+          const transcribeFile = new File([blob], transcribeAudio, { type: 'audio/wav' });
+          setTranscribeFile(transcribeFile)
+        })
+      })
+    }
+    if (dubbingAudio !== "") {
+      fetch(`http://localhost:4000/static/source_audios/${dubbingAudio}`).then(response => {
+        response.blob().then(blob => {
+          const dubbingFile = new File([blob], dubbingAudio, { type: 'audio/wav' });
+          console.log(dubbingFile)
+          setDubbingFile(dubbingFile)
+        })
+      })
+    }
+
+  }, [transcribeAudio, dubbingAudio])
+
+
   const uploadFile = async () => {
     if (!videoFile) return;
+    if (transcribeText === "") return;
     const formData = new FormData()
     formData.append("file", videoFile)
+    formData.append("text", transcribeText)
     try {
       const response = await axios.post("http://localhost:4000/voice-clone", formData, {
         headers: {
@@ -194,7 +375,17 @@ export function Dubbing() {
       })
       setDubbingVideo(response.data.video_file)
       setDubbingAudio(response.data.audio_file)
-      setLoading(false)
+      setLoading(true)
+      axios.post("http://localhost:4000/generate_audio", {
+        transcribeText: transcribeText,
+        source: response.data.audio_file
+      }).then(result => {
+        setTranscribeAudio(result.data.output)
+        setSubArray(result.data.subtitles)
+        setSpeakers(result.data.speakers)
+        setLoading(false)
+      })
+
       console.log(response.data)
     } catch (error) {
       console.log(error)
@@ -271,6 +462,10 @@ export function Dubbing() {
       setIsPlaying(true)
     }
   }
+  const fetchVoices = async () => {
+    const response = await axios.get("http://localhost:4000/voice/list")
+    setVoices(response.data.voices)
+  }
 
   return (
 
@@ -321,6 +516,46 @@ export function Dubbing() {
                         </div>
                       )}
                     </Dropzone>
+                  </div>
+                  <div className="upload flex-grow flex flex-col justify-between mt-5">
+                    <div className={`rounded-xl cursor-pointer flex-grow flex flex-col items-center justify-center border border-[#4E3F3A] border-3 border-dashed cursor-pointer mb-5 ${transcribeText !== "" ? "hidden" : ""}`} onClick={() => {
+                      document.getElementById("transcribe_text").click()
+                    }}>
+
+                      <input type='file' id="transcribe_text" style={{ display: 'none' }} accept=".txt,.doc,.docx" multiple={false} onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file.type === 'text/plain') {
+                          const reader = new FileReader()
+                          reader.onload = () => {
+                            console.log(reader.result)
+                            setTranscribeText(reader.result)
+                          }
+                          reader.readAsText(file)
+                        } else if (file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                          const reader = new FileReader()
+                          reader.readAsBinaryString(file)
+                          await new Promise((resolve) => {
+                            reader.onload = resolve;
+                          });
+                          const content = reader.result;
+                          const doc = new docxtemplate().loadZip(new pizzip(content));
+                          const textContent = doc.getFullText();
+                          console.log(textContent)
+                          setTranscribeText(textContent)
+                        }
+                      }} />
+
+                      <p><span className="text-[#EB8D38]">Click to import</span><span className="text-white"> or drop file here</span></p>
+                      <p className="text-white">Supported .txt .docx .doc</p>
+                    </div>
+                    <textarea type="text" className={`rounded-xl cursor-pointer flex-grow flex flex-col items-center justify-center border border-[#4E3F3A] border-3 border-dashed cursor-pointer bg-transparent p-5 mb-5 text-[#D5D5D8] ${transcribeText === "" ? "hidden" : ""}`} placeholder="Please input a text. Then click 'Generate Audio' button." value={transcribeText} onChange={(e) => {
+                      if (e.target.value === "") {
+                        document.getElementById("transcribe_text").value = ''
+                      }
+                      setTranscribeText(e.target.value)
+                    }}>
+
+                    </textarea>
                   </div>
                   <div className="flex flex-col mt-5">
                     <label className="text-white pb-2 text-lg text-center">Or</label>
@@ -379,7 +614,7 @@ export function Dubbing() {
         isProcessing ? (
           <div className="flex-grow flex">
             <div className="w-[108px] h-full flex flex-col">
-              <div className="h-[67%] flex-grow">
+              <div className="flex-grow">
                 <ul className="flex flex-col items-center">
                   <li className="p-5">
                     <Link>
@@ -501,7 +736,7 @@ export function Dubbing() {
                   </li>
                 </ul>
               </div>
-              <div className="h-[220px] border-t-2 flex flex-col justify-center items-center">
+              <div className="h-[300px] border-t-2 flex flex-col justify-center items-center">
                 <a href="#">
                   <img src="/img/icons/user.png" className="w-5" />
                 </a>
@@ -511,277 +746,108 @@ export function Dubbing() {
               </div>
             </div>
             <div className="flex-grow h-full flex flex-col">
-              <div className="flex flex-grow">
-                <div className="w-[25%] h-full bg-[#2E2F3A] p-5 flex flex-col">
+              <div className="flex flex-grow" ref={panelRef}>
+                <div className={`w-[25%] h-full bg-[#2E2F3A] p-5 flex flex-col h-[${panelH}px]`}>
                   <div className="border-b-2 border-[#21222D] pb-3">
                     <div className="">
                       <p className="text-[#D5D5D8] pb-1">Translate From</p>
-                      <select className="bg-transparent w-full p-3 rounded-lg border-2 border-[#D5D5D8] text-[#D5D5D8]">
+                      <select className="bg-transparent w-full p-2 rounded-lg border-2 border-[#D5D5D8] text-[#D5D5D8] forcus:border-[#4E3F3A]">
                         <option>English</option>
                       </select>
                     </div>
                     <div className="pt-2">
                       <p className="text-[#D5D5D8] pb-1">Translate To</p>
-                      <select className="bg-transparent w-full p-3 rounded-lg border-2 border-[#D5D5D8] text-[#D5D5D8]">
+                      <select className="bg-transparent w-full p-2 rounded-lg border-2 border-[#D5D5D8] text-[#D5D5D8] forcus:border-[#4E3F3A]">
                         <option>English</option>
                       </select>
                     </div>
                   </div>
                   <div className="pt-2 flex-grow">
-                    <p className="text-white pb-1 text-2xl">Choose Voices For Dubbing</p>
+                    <p className="text-white pb-1 text-xl">Choose Voices For Dubbing</p>
+                    <p className="text-[#D5D5D8]">{speakers.length} Detected</p>
+                    {
+                      speakers.map((speaker, index) => {
+                        return (
+                          <div className="">
+                            <p className="text-[#D5D5D8]">{index + 1}</p>
+                            <div className="flex rounded-xl p-2 border-[#EB8D38] items-center justify-between pl-2 pr-2 w-full border border-2 border-[#4E3F3A]">
+                              <Dropdown>
+                                <MenuButton>
+                                  <span className="flex items-center">
+                                    <img src="/img/icons/user.png" />
+                                    <span className="ml-4">Speaker {speaker}</span></span>
+                                  <img src='/img/icons/chevron-down.png' />
+                                </MenuButton>
+                                <Menu slots={{ listbox: AnimatedListbox }}>
+                                  <MenuItem>Profile</MenuItem>
+                                  <MenuItem>
+                                    Language settings
+                                  </MenuItem>
+                                  <MenuItem>Log out</MenuItem>
+                                </Menu>
+                              </Dropdown>
+                            </div>
+                          </div>
+                        )
+                      })
+                    }
+
                   </div>
                   <div>
                     <button className="bg-[#EB8D38] w-full text-xl rounded-lg pt-3 pb-3 text-white">Apply Voices</button>
                   </div>
                 </div>
-                <div className="w-[50%] m-10 mt-0 flex flex-col border-r-2 border-[#2E2F3A]">
-                  <textarea type="text" className="flex-grow rounded-xl outline-none resize-none p-5 border border-[#4E3F3A] border-dashed w-full border-3 text-[#D5D5D8] text-xl bg-transparent" placeholder="Please input a text. Then click 'Generate Audio' button." onChange={(e) => {
-                    setTranscribeText(e.target.value)
-                  }}></textarea>
-                  <button className="w-full flex justify-center items-center bg-[#EB8D38] p-5 rounded-xl text-xl mt-5 text-white" onClick={async (e) => {
-
-                    if (transcribeText === "") {
-                      return
+                <div className={`w-[50%] pl-10 pr-10 flex flex-col border-r-2 border-[#2E2F3A] overflow-y-scroll h-[${panelH}px]`}>
+                  <h3 className="text-3xl">Neon Gaming File</h3>
+                  <div className="transcribe-text mt-5">
+                    {
+                      subArray.map((title, index) => {
+                        return (
+                          <div className={`bg-[#2E2F3A] p-3 mb-3 ${(title.start >= currentTime && title.end <= title.end) ? "border border-2 border-[#EB8D38]" : ""} rounded-xl flex items-center justify-between`} key={`subtitle${index}`}>
+                            <div className="flex items-center">
+                              <img src="/img/icons/user.png" />
+                              <p className="text-white pl-4">{title.lines.join(".")}</p>
+                            </div>
+                            <div className="flex items center">
+                              <span className="text-[#D5D5D8]">Duration: {title.length} sec</span>
+                              <PlayArrowIcon className="text-white cursor-pointer ml-3" />
+                              <MoreVertIcon className="text-white cursor-pointer ml-3" />
+                            </div>
+                          </div>
+                        )
+                      })
                     }
-                    setLoading(true)
-                    const response = await axios.post("http://localhost:4000/generate_audio", {
-                      transcribeText: transcribeText,
-                      source: dubbingAudio
-                    })
-                    setLoading(false)
-                    setTranscribeAudio(response.data.output)
-                    setSubArray(response.data.subtitles)
-                  }}>{loading ? <img className="w-10 mr-3" src="/img/icons/loading.gif" /> : <></>}Generate Audio</button>
-
+                  </div>
                 </div>
                 <div className="w-[25%] m-10 mt-0 flex justify-center items-center" id="video_panel">
-                  {/* <VideoPlayer
-                    url={url}
-                    player={player}
-                    setPlayer={setPlayer}
-                    setCurrentTime={setCurrentTime}
-                    v_height={v_height}
-                    v_width={v_width}
-                  />
 
-                  <input
-                    className="uploadVideo opacity-0"
-                    type="file"
-                    name="file"
-                    onChange={handleVideoFile}
-                  />
-                  <input
-                    type="range"
-                    title={duration}
-                    value={duration}
-                    className="opacity-0"
-                    min="5"
-                    max="20"
-                    step="1"
-                    onChange={(e) => {
-                      handleDurationChange(Number(e.currentTarget.value));
-                    }}
-                  /> */}
-                  <video width={v_width} muted src={`http://localhost:4000/static/source_audios/${dubbingVideo}`} ref={originVideoRef}
-                  // onTimeUpdate={(e) => {
-                  //   setCurrentTime(e.target.currentTime)
-                  // }}
-                  // onLoadedMetadata={(e) => {
-                  //   setTotalTime(e.target.duration)
-                  // }}
+                  <video width="100%" muted src={`http://localhost:4000/static/source_audios/${dubbingVideo}`} ref={originVideoRef}
+
                   />
                 </div>
 
               </div>
               <div className="flex">
-                <div className="w-[150px]">
-                  <div className="h-[50px] border-t-2 border-b-2"></div>
-                  <div className="h-[20px] border-l-2 border-r-2"></div>
-                  <div className="h-[50px] border-b-2 border-l-2 border-r-2 flex items-center pl-2">
-                    <TextFieldsIcon className="text-[#EB8D38]" /><p className="ml-2 text-white">SubTitle</p>
-                  </div>
-                  <div className="h-[50px] border-b-2 border-l-2 border-r-2 flex items-center pl-2">
-                    <GraphicEqIcon className="text-[#EB8D38]" /><p className="ml-2 text-white text-center">Cloned</p>
-                    <div className="flex-grow text-right">
-                      {
-                        clonedMute ? <VolumeOffIcon className="text-white mr-2 cursor-pointer" onClick={(e) => {
-                          setClonedMute(false)
-                        }} />
-                          : <VolumeUpIcon className="text-white mr-2 cursor-pointer" onClick={(e) => {
-                            setClonedMute(true)
-                          }} />
-                      }
-                    </div>
-                  </div>
-                  <div className="h-[50px] border-b-2 border-l-2 border-r-2 flex items-center pl-2">
-                    <GraphicEqIcon className="text-[#EB8D38]" /> <p className="ml-2 text-white text-center">Original</p>
-                    <div className="flex-grow text-right">
-                      {
-                        originalMute ? <VolumeOffIcon className="text-white mr-2 cursor-pointer" onClick={(e) => {
-                          setOriginalMute(false)
-                        }} />
-                          : <VolumeUpIcon className="text-white mr-2 cursor-pointer" onClick={(e) => {
-                            setOriginalMute(true)
-                          }} />
-                      }
-                    </div>
-                  </div>
-                </div>
-                <div className="h-[220px] flex-grow flex flex-col">
-                  <div className="h-[50px] border-t-2 border-b-2 flex items-center justify-between">
-                    <a href="#">
-                      <img src="/img/icons/arrow-down.png" />
-                    </a>
-                    <div className="flex items-center">
-                      <audio ref={audioRef} controls src={transcribeAudio !== "" ? `http://localhost:4000/static/target_audios/${transcribeAudio}` : ""} className="hidden" muted={clonedMute} ></audio>
-                      <audio ref={originalAudioRef} controls src={dubbingAudio !== "" ? `http://localhost:4000/static/source_audios/${dubbingAudio}` : ""} className="hidden" onTimeUpdate={(e) => {
-
-                        setCurrentTime(e.target.currentTime)
-                      }} onLoadedMetadata={(e) => {
-
-                        setTotalTime(originalAudioRef.current.duration)
-                      }} muted={originalMute}></audio>
-                      <a href="#" onClick={moveBackward}>
-                        <img src="/img/icons/prev.png" />
-                      </a>
-                      <a href="#">
-                        <img src={isPlaying ? "/img/icons/pause.png" : "/img/icons/play.png"} onClick={playAudio} />
-                      </a>
-                      <a href="#">
-                        <img src="/img/icons/next.png" onClick={moveForward} />
-                      </a>
-                      <p className="text-white pl-2">
-                        {currentTimeStr} / {totalTimeStr}
-                      </p>
-                    </div>
-                    <div className="flex items-center">
-                      <a href="#" onClick={handleDownload} className="mr-3 text-[#d3d3d5] text-3xl" title="Download">
-                        <FileDownloadIcon />
-                      </a>
-                      <a href="#" className="mr-3 text-[#d3d3d5] text-3xl" title="Add">
-                        <AddIcon />
-                      </a>
-                      <a href="#" className="mr-3 text-[#d3d3d5] text-3xl" title="Remove">
-                        <RemoveIcon />
-                      </a>
-                    </div>
-                  </div>
-                  <div className="h-[20px]"
-                  >
-                    <ShWave
-                      duration={duration}
-                      subtitle={false}
-                      waveform={false}
-                      ruler={true}
-                      backgroundColor="#21222D"
-                      pointerColor="#EB8D38"
-                      pointerWidth={3}
-                      waveColor="#fbf8f86b"
-                      alterWaveColor="#ffffff"
-                      waveScale={0.3}
-                      currentTime={currentTime}
-                      throttleWait={300}
-                      url={transcribeAudio !== "" ? `http://localhost:4000/static/target_audios/${transcribeAudio}` : ""}
-                      click={click}
-                      contextmenu={contextmenu}
-                      subArray={subArray}
-                      onSubClick={handleSubClick}
-                      onSubMove={handleSubMove}
-                      onSubMoveError={handleSubMoveError}
-                      ErrorWait={500}
-                      ErrorColor="#f09b50d9"
-                      onSubResize={handleSubResize}
-                      subBlockClass="mySubBlockClass"
-                    />
-                  </div>
-                  <div className="h-[50px]"
-                  >
-                    <ShWave
-                      duration={duration}
-                      subtitle={true}
-                      waveform={false}
-                      ruler={false}
-                      backgroundColor="#21222D"
-                      pointerColor="#EB8D38"
-                      pointerWidth={3}
-                      waveColor="#fbf8f86b"
-                      alterWaveColor="#ffffff"
-                      waveScale={0.3}
-                      currentTime={currentTime}
-                      throttleWait={300}
-                      url={transcribeAudio !== "" ? `http://localhost:4000/static/target_audios/${transcribeAudio}` : ""}
-                      click={click}
-                      contextmenu={contextmenu}
-                      subArray={subArray}
-                      onSubClick={handleSubClick}
-                      onSubMove={handleSubMove}
-                      onSubMoveError={handleSubMoveError}
-                      ErrorWait={500}
-                      ErrorColor="#f09b50d9"
-                      onSubResize={handleSubResize}
-                      subBlockClass="mySubBlockClass"
-                    />
-                  </div>
-                  <div className="h-[50px] transcribe_audio"
-                  >
-                    <ShWave
-                      duration={duration}
-                      subtitle={false}
-                      waveform={true}
-                      ruler={false}
-                      backgroundColor="#21222D"
-                      pointerColor="#EB8D38"
-                      pointerWidth={3}
-                      waveColor="#fbf8f86b"
-                      alterWaveColor="#ffffff"
-                      waveScale={0.3}
-                      currentTime={currentTime}
-                      throttleWait={300}
-                      url={transcribeAudio !== "" ? `http://localhost:4000/static/target_audios/${transcribeAudio}` : ""}
-                      click={click}
-                      contextmenu={contextmenu}
-                      subArray={subArray}
-                      onSubClick={handleSubClick}
-                      onSubMove={handleSubMove}
-                      onSubMoveError={handleSubMoveError}
-                      ErrorWait={500}
-                      ErrorColor="#f09b50d9"
-                      onSubResize={handleSubResize}
-                      subBlockClass="mySubBlockClass"
-                    />
-                  </div>
-                  <div className="h-[50px] original_audio"
-                  >
-                    <ShWave
-                      duration={duration}
-                      subtitle={false}
-                      waveform={true}
-                      ruler={false}
-                      backgroundColor="#21222D"
-                      pointerColor="#EB8D38"
-                      pointerWidth={3}
-                      waveColor="#fbf8f86b"
-                      alterWaveColor="#ffffff"
-                      waveScale={0.3}
-                      currentTime={currentTime}
-                      throttleWait={300}
-                      url={`http://localhost:4000/static/source_audios/${dubbingVideo}`}
-                      click={click}
-                      contextmenu={contextmenu}
-                      subArray={subArray}
-                      onSubClick={handleSubClick}
-                      onSubMove={handleSubMove}
-                      onSubMoveError={handleSubMoveError}
-                      ErrorWait={500}
-                      ErrorColor="#f09b50d9"
-                      onSubResize={handleSubResize}
-                      subBlockClass="mySubBlockClass"
-                    />
+                <div className="h-[300px] w-full flex flex-col">
+                  <div className="flex-grow relative">
+                    <SettingsContext><Studio transcribeFile={transcribeFile} dubbingFile={dubbingFile} subTitle={subArray} setCurrentTime={setCurrentTime} /></SettingsContext>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        ) : <></>
+      }
+      {
+        loading ? (
+          <>
+            <div className="fixed w-[100vw] h-[100vh] left-0 top-0 bg-black opacity-50 flex items-center justify-center">
+
+            </div>
+            <div className="fixed left-[50%] top-[50%] bg-white rounded-xl p-4 translate-x-[-50%] translate-y-[-50%] flex items-center">
+              <img className="w-10 mr-3" src="/img/icons/loading.gif" /><p className="z-1000 text-lg mr-3 text-black">Processing...</p>
+            </div>
+          </>
         ) : <></>
       }
 

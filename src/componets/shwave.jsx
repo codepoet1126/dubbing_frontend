@@ -82,7 +82,8 @@ class ShWave extends Component {
     //绘制背景
     painter.drawBackground(waveCanvas, ctx, backgroundColor);
     //绘制尺子
-    painter.drawRuler(waveCanvas, ctx, pixelRatio, duration, currentTime);
+    if (this.props.ruler)
+      painter.drawRuler(waveCanvas, ctx, pixelRatio, duration, currentTime);
     //绘制指针
     painter.drawPointer(
       waveCanvas,
@@ -99,19 +100,20 @@ class ShWave extends Component {
     const { sampleRate } = this.state.audioData;
     const channelData = this.state.audioData.getChannelData(0);
     // console.log(sampleRate,channelData,this.state.audioData)
-    painter.drawWave(
-      waveCanvas,
-      ctx,
-      duration,
-      currentTime,
-      sampleRate,
-      channelData,
-      waveScale,
-      true,
-      alterWaveColor,
-      waveColor,
-      0
-    );
+    if(this.props.waveform)
+      painter.drawWave(
+        waveCanvas,
+        ctx,
+        duration,
+        currentTime,
+        sampleRate,
+        channelData,
+        waveScale,
+        true,
+        alterWaveColor,
+        waveColor,
+        0
+      );
   };
 
   //resize
@@ -174,6 +176,7 @@ class ShWave extends Component {
       ErrorWait,
       ErrorColor,
       onSubResize,
+      waveform,
       subBlockClass,
     } = this.props;
     //当前canvas的起始时间
@@ -181,9 +184,9 @@ class ShWave extends Component {
     return (
       <div
         ref={this.$shwave}
-        className="shwave relative flex w-full h-full"
+        className={`shwave relative flex w-full h-full`}
       >
-        {subArray && (
+        {subArray && this.props.subtitle && (
           <SubBlocks
             duration={duration}
             begin={begin}

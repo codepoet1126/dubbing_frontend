@@ -76,15 +76,16 @@ export const drawRuler = (
   //起始时间
   const begin = getBegin(currentTime, duration);
   let second = -1;
+  console.log(pixelRatio)
   for (let index = 0; index < length; index += 1) {
     //十格间距
     if (index % 10 === 0) {
       second += 1;
-      ctx.fillRect(index * gap, 0, pixelRatio, fontHeight * pixelRatio);
+      ctx.fillRect(index * gap, 0, pixelRatio, fontHeight * pixelRatio / 2);
       ctx.fillText(
         common.durationToTime(begin + second).split(".")[0],
         gap * index - fontSize * pixelRatio * 2 + pixelRatio,
-        fontTop * pixelRatio
+        fontTop * pixelRatio / 1.5
       );
     } else if (index % 5 === 0) {
       ctx.fillRect(index * gap, 0, pixelRatio, (fontHeight * pixelRatio) / 1.5);
@@ -139,7 +140,7 @@ const drawWave = (
   currentTime = 0,
   sampleRate,
   channelData,
-  waveScale = 0.8,
+  waveScale = 1,
   progress = true,
   progressColor = "#57e3e3",
   waveColor = "#fbf8f86b"
